@@ -12,14 +12,13 @@
 #include <stdio.h>
 
 typedef struct {
-    uint32_t graphics_count, present_count;
-    uint32_t *graphics_family, *present_family;
+    int16_t graphics_index, present_index;
 } QueueFamilyIndices;
 
 typedef struct {
     VkInstance instance;
     VkDevice logical_device;
-    QueueFamilyIndices indices;
+    QueueFamilyIndices *indices;
     VkSurfaceKHR surface;
     VkDebugUtilsMessengerEXT debug_messenger;
 } VulkanDevice;
@@ -32,20 +31,19 @@ extern const char *VALIDATION_LAYERS[];
 VulkanDevice *create_vulkan_device();
 VkInstance create_instance();
 VkPhysicalDevice get_physical_device(VkInstance instance);
-VkDevice create_logical_device(VkPhysicalDevice physical_device, QueueFamilyIndices *indices);
+VkDevice create_logical_device(VkPhysicalDevice physical_device, VkQueueFamilyProperties *family_properties, uint32_t family_count) ;
 
 // Extensions
 bool is_physical_device_suitable(VkPhysicalDevice physical_device);
 VkExtensionProperties *get_available_extensions(uint32_t *extension_count);
 const char **get_required_extensions(uint32_t *extension_count);
 
-// Family queues
+// Queue families
 VkQueueFamilyProperties *get_queue_family_properties(VkPhysicalDevice physical_device, uint32_t *family_count);
-QueueFamilyIndices *alloc_queue_family_indices(VkQueueFamilyProperties *family_properties, uint32_t family_count);
-VkDeviceQueueCreateInfo *create_queue_family_create_infos(VkQueueFamilyProperties *family_properties, uint32_t family_count, QueueFamilyIndices *indices);
+QueueFamilyIndices *get_unique_queue_family_indices(VkPhysicalDevice physical_device, VkSurfaceKHR surface, VkQueueFamilyProperties *family_properties, uint32_t family_count);
+VkDeviceQueueCreateInfo *create_queue_family_create_infos(VkQueueFamilyProperties *family_properties, uint32_t family_count);
 
 // Cleanup
-void destroy_family_queue_indicies(QueueFamilyIndices *queue_indices);
 void destroy_vulkan_device(VulkanDevice *device);
 
 // Debugging

@@ -1,5 +1,100 @@
 #include "device.h"
 
+#ifdef NDEBUG
+    const bool ENABLE_VALIDAITON_LAYERS = false;
+#else
+    const bool ENABLE_VALIDAITON_LAYERS = true;
+#endif
+
+const uint32_t VALIDATION_LAYER_COUNT = 1;
+const char *VALIDATION_LAYERS[] = {
+    "VK_LAYER_KHRONOS_validation"
+};
+
+VulkanDevice *create_vulkan_device() {
+    VulkanDevice *device = malloc(sizeof(VulkanDevice));
+    if (device == NULL) {
+        fprintf(stderr, "failed to alloc VulkanDevice\n");
+        return NULL;
+    }
+
+    device->instance = create_instance();
+    if (device->instance == NULL) {
+        fprintf(stderr, "failed to create VkInstance\n");
+        return NULL;
+    }
+
+    device->debug_messenger = VK_NULL_HANDLE;
+    if (ENABLE_VALIDAITON_LAYERS) {
+        create_debug_messenger(device->instance, &device->debug_messenger);
+        if (device->debug_messenger == VK_NULL_HANDLE) {
+            fprintf(stderr, "debug messenger failed to create\n");
+            return NULL;
+        }
+
+        print_extensions();
+        printf("Validation layers enabled\n");
+    }
+
+    device->logical_device = create_logical_device(device->instance);
+    if (device->logical_device == NULL) {
+        fprintf(stderr, "failed to create logical device\n");
+    }
+    return device;
+}
+
+VkInstance create_instance() {
+    if (ENABLE_VALIDAITON_LAYERS && !check_validation_layer_support(VALIDATION_LAYER_COUNT, VALIDATION_LAYERS)) {
+        fprintf(stderr, "validation layers requested, but not supported!\n");
+        return NULL;
+    }
+
+    VkApplicationInfo app_info;
+    app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    app_info.pApplicationName = "Renderer";
+    app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+    app_info.pEngineName = "No Engine";
+    app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+    app_info.apiVersion = VK_API_VERSION_1_0;
+    app_info.pNext = NULL;
+
+    VkInstanceCreateInfo create_info;
+    create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    create_info.pApplicationInfo = &app_info;
+
+    // Get extensions
+    uint32_t extention_count = 0;
+    const char **extension_names = get_required_extensions(&extention_count);
+    if (extension_names == NULL) {
+        return NULL;
+    }
+
+    create_info.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+    create_info.enabledExtensionCount = extention_count;
+    create_info.ppEnabledExtensionNames = extension_names;
+    create_info.enabledLayerCount = 0;
+    create_info.pNext = NULL;
+
+    if (ENABLE_VALIDAITON_LAYERS) {
+        create_info.enabledLayerCount = VALIDATION_LAYER_COUNT;
+        create_info.ppEnabledLayerNames = (const char* const*)VALIDATION_LAYERS;
+
+        VkDebugUtilsMessengerCreateInfoEXT debug_create_info;
+        populate_debug_messenger_create_info(&debug_create_info);
+        create_info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debug_create_info;
+    }
+
+    // Create instance
+    VkInstance instance;
+    VkResult result = vkCreateInstance(&create_info, NULL, &instance);
+    if (result != VK_SUCCESS) {
+        fprintf(stderr, "failed to create VkInstance\n");
+        return NULL;
+    }
+
+    return instance;
+}
+
 VkDevice create_logical_device(VkInstance instance) {
     // Get all available physical devices
     uint32_t device_count = 0;
@@ -101,7 +196,7 @@ const char **get_required_extensions(uint32_t *extension_count) {
     }
 
     uint32_t additional_extensions = 1;
-    if (enable_validation_layers) {
+    if (ENABLE_VALIDAITON_LAYERS) {
         additional_extensions++;
     }
 
@@ -118,7 +213,7 @@ const char **get_required_extensions(uint32_t *extension_count) {
 
     // Additional extensions
     extensions[required_count] = VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME;
-    if (enable_validation_layers) {
+    if (ENABLE_VALIDAITON_LAYERS) {
         extensions[required_count + 1] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
     }
 
@@ -250,6 +345,16 @@ VkDeviceQueueCreateInfo *create_queue_family_create_infos(VkPhysicalDevice physi
     free(queue_priorities);
     free(family_properties);
     return queue_create_infos;
+}
+
+void destroy_vulkan_device(VulkanDevice *device) {
+    vkDestroyDevice(device->logical_device, NULL);
+    if (ENABLE_VALIDAITON_LAYERS) {
+        destroy_debug_utils_msg_ext(device->instance, device->debug_messenger, NULL);
+    }
+
+    vkDestroyInstance(device->instance, NULL);
+    free(device);
 }
 
 void destroy_family_queue_indicies(QueueFamilyIndices *queue_family) {

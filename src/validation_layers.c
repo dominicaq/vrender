@@ -61,7 +61,7 @@ void destroy_debug_utils_msg_ext(VkInstance instance,
     }
 }
 
-bool check_validation_layer_support(ValidationConfig *validation_config) {
+bool check_validation_layer_support(uint32_t num_validation_layers, const char **validation_layers) {
     uint32_t layer_count;
     vkEnumerateInstanceLayerProperties(&layer_count, NULL);
 
@@ -75,10 +75,10 @@ bool check_validation_layer_support(ValidationConfig *validation_config) {
 
     // Check if validation configs layers are present
     bool supports_layers = true;
-    for (int i = 0; i < validation_config->count; ++i) {
+    for (int i = 0; i < num_validation_layers; ++i) {
         bool layer_found = false;
         for (int j = 0; j < layer_count; ++j) {
-            if (strcmp(validation_config->layers[i], available_layers[j].layerName) == 0) {
+            if (strcmp(validation_layers[i], available_layers[j].layerName) == 0) {
                 layer_found = true;
                 break;
             }

@@ -8,17 +8,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-struct {
-    uint32_t count;
-    char **layers;
-    VkDebugUtilsMessengerEXT debug_messenger;
-} typedef ValidationConfig;
-
 void create_debug_messenger(VkInstance instance, VkDebugUtilsMessengerEXT *debug_messenger);
 
 void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT *create_info);
 
-bool check_validation_layer_support(ValidationConfig *validation_config);
+bool check_validation_layer_support(uint32_t num_validation_layers, const char **validation_layers);
 
 VkResult create_debug_utils_msg_ext(VkInstance instance,
     const VkDebugUtilsMessengerCreateInfoEXT* p_create_info,

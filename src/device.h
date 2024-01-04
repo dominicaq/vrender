@@ -4,7 +4,6 @@
 #include "GLFW/glfw3.h"
 #include "vulkan/vulkan.h"
 
-#include "global_config.h"
 #include "validation_layers.h"
 
 #include <string.h>
@@ -18,11 +17,20 @@ typedef struct {
 } QueueFamilyIndices;
 
 typedef struct {
+    VkInstance instance;
     VkDevice logical_device;
-    QueueFamilyIndices queues_indices;
-} Device;
+    VkDebugUtilsMessengerEXT debug_messenger;
+} VulkanDevice;
+
+extern const bool ENABLE_VALIDAITON_LAYERS;
+extern const uint32_t VALIDATION_LAYER_COUNT;
+extern const char *VALIDATION_LAYERS[];
 
 // Device
+VulkanDevice *create_vulkan_device();
+void destroy_vulkan_device(VulkanDevice *device);
+
+VkInstance create_instance();
 VkDevice create_logical_device(VkInstance instance);
 bool is_physical_device_suitable(VkPhysicalDevice physcial_device);
 

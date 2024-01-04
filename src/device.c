@@ -11,6 +11,9 @@ const char *VALIDATION_LAYERS[] = {
     "VK_LAYER_KHRONOS_validation"
 };
 
+/*
+* Device creation
+*/
 VulkanDevice *create_vulkan_device() {
     VulkanDevice *device = malloc(sizeof(VulkanDevice));
     if (device == NULL) {
@@ -24,11 +27,10 @@ VulkanDevice *create_vulkan_device() {
         return NULL;
     }
 
-    device->debug_messenger = VK_NULL_HANDLE;
     if (ENABLE_VALIDAITON_LAYERS) {
-        create_debug_messenger(device->instance, &device->debug_messenger);
+        device->debug_messenger = create_debug_messenger(device->instance);
         if (device->debug_messenger == VK_NULL_HANDLE) {
-            fprintf(stderr, "debug messenger failed to create\n");
+            fprintf(stderr, "failed to create debug messenger\n");
             return NULL;
         }
 
@@ -36,9 +38,15 @@ VulkanDevice *create_vulkan_device() {
         printf("Validation layers enabled\n");
     }
 
-    device->logical_device = create_logical_device(device->instance);
+    device->logical_device = create_logical_device(device->instance, &(device->indices));
     if (device->logical_device == NULL) {
         fprintf(stderr, "failed to create logical device\n");
+        return NULL;
+    }
+
+    if (device->indices == NULL) {
+        fprintf(stderr, "failed to create family indices\n");
+        return NULL;
     }
     return device;
 }
@@ -95,54 +103,57 @@ VkInstance create_instance() {
     return instance;
 }
 
-VkDevice create_logical_device(VkInstance instance) {
+VkDevice create_logical_device(VkInstance instance, QueueFamilyIndices **indices) {
     // Get all available physical devices
-    uint32_t device_count = 0;
-    vkEnumeratePhysicalDevices(instance, &device_count, NULL);
-    if (device_count == 0) {
+    uint32_t physical_device_count = 0;
+    vkEnumeratePhysicalDevices(instance, &physical_device_count, NULL);
+    if (physical_device_count == 0) {
         fprintf(stderr, "failed to find physical device\n");
         return NULL;
     }
 
-    VkPhysicalDevice *physical_devices = malloc(device_count * sizeof(VkPhysicalDevice));
-    vkEnumeratePhysicalDevices(instance, &device_count, physical_devices);
+    VkPhysicalDevice *physical_devices = malloc(physical_device_count * sizeof(VkPhysicalDevice));
+    if (physical_devices == NULL) { return NULL; }
+    vkEnumeratePhysicalDevices(instance, &physical_device_count, physical_devices);
 
     // Choose a physical device
     VkPhysicalDevice physical_device;
-    for (int i = 0; i < device_count; ++i) {
+    for (int i = 0; i < physical_device_count; ++i) {
         if (is_physical_device_suitable(physical_devices[i])) {
             physical_device = physical_devices[i];
             break;
         }
     }
 
-    VkDevice device;
+    // Queue families
+    uint32_t queue_family_count = 0;
+    VkQueueFamilyProperties *family_properties = get_queue_family_properties(physical_device, &queue_family_count);
+    if (family_properties == NULL || queue_family_count == 0) {
+        fprintf(stderr, "failed to get queue family properties\n");
+        return NULL;
+    }
+
+    *indices = alloc_queue_family_indices(family_properties, queue_family_count);
+    if (indices == NULL) {
+        fprintf(stderr, "failed to get alloc family indices\n");
+        return NULL;
+    }
+
+    // VkDeviceQueueCreateInfo *queue_create_infos = create_queue_family_create_infos(family_properties, queue_family_count, &indices);
+    // if (queue_create_infos == NULL) {
+    //     fprintf(stderr, "failed to create device queue create infos\n");
+    //     return NULL;
+    // }
+
+    // Begin filling device struct
     VkDeviceCreateInfo create_info;
     create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     create_info.pNext = NULL;
     create_info.flags = 0;
 
-    // Family Queue(s)
-    uint32_t queue_count = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_count, NULL);
-    if (queue_count == 0) {
-        // No queue families found
-        return NULL;
-    }
-
-    QueueFamilyIndices *indices = malloc(sizeof(QueueFamilyIndices));
-    if (indices == NULL) {
-        return NULL;
-    }
-
-    VkDeviceQueueCreateInfo *queue_create_infos = create_queue_family_create_infos(physical_device, queue_count, indices);
-    if (queue_create_infos == NULL) {
-        fprintf(stderr, "failed to create device queue create infos\n");
-        return NULL;
-    }
-
-    create_info.queueCreateInfoCount = queue_count;
-    create_info.pQueueCreateInfos = queue_create_infos;
+    // Device queue families
+    // create_info.queueCreateInfoCount = family_count;
+    // create_info.pQueueCreateInfos = queue_create_infos;
 
     // Layers
     create_info.enabledLayerCount = 0;
@@ -157,14 +168,19 @@ VkDevice create_logical_device(VkInstance instance) {
     vkGetPhysicalDeviceFeatures(physical_device, &device_features);
     create_info.pEnabledFeatures = &device_features;
 
-    if(vkCreateDevice(physical_device, &create_info, NULL, &device) != VK_SUCCESS) {
+    VkDevice logical_device;
+    if(vkCreateDevice(physical_device, &create_info, NULL, &logical_device) != VK_SUCCESS) {
         fprintf(stderr, "failed to create logical device!\n");
         return NULL;
     }
 
-    return device;
+    free(family_properties);
+    return logical_device;
 }
 
+/*
+* Extension helpers
+*/
 bool is_physical_device_suitable(VkPhysicalDevice physical_device) {
     VkPhysicalDeviceProperties device_properties;
     vkGetPhysicalDeviceProperties(physical_device, &device_properties);
@@ -221,6 +237,115 @@ const char **get_required_extensions(uint32_t *extension_count) {
     return extensions;
 }
 
+/*
+* Queue families
+*/
+VkQueueFamilyProperties *get_queue_family_properties(VkPhysicalDevice physical_device, uint32_t *family_count) {
+    vkGetPhysicalDeviceQueueFamilyProperties(physical_device, family_count, NULL);
+    VkQueueFamilyProperties *family_properties = malloc(sizeof(VkQueueFamilyProperties) * (*family_count));
+    if (family_properties == NULL) { return NULL; }
+    vkGetPhysicalDeviceQueueFamilyProperties(physical_device, family_count, family_properties);
+    return family_properties;
+}
+
+QueueFamilyIndices *alloc_queue_family_indices(VkQueueFamilyProperties *family_properties, uint32_t family_count) {
+    QueueFamilyIndices *indices = malloc(sizeof(QueueFamilyIndices));
+    if (indices == NULL) { return NULL; }
+
+    uint32_t num_queues = 0;
+    for (int i = 0; i < family_count; ++i) {
+        num_queues += family_properties[i].queueCount;
+    }
+
+    // Get number of indicies for each family
+    indices->graphics_count = 0;
+    indices->present_count = 0;
+    for (int i = 0; i < num_queues; ++i) {
+        if (family_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+            ++indices->graphics_count;
+        }
+    }
+
+    // Allocate each family
+    indices->graphics_family = malloc(sizeof(uint32_t) * indices->graphics_count);
+    indices->present_family = malloc(sizeof(uint32_t) * indices->present_count);
+    if (indices->graphics_family == NULL || indices->present_family == NULL) {
+        return NULL;
+    }
+    return indices;
+}
+
+VkDeviceQueueCreateInfo *create_queue_family_create_infos(VkQueueFamilyProperties *family_properties, uint32_t family_count, QueueFamilyIndices *indices) {
+    VkDeviceQueueCreateInfo *queue_create_infos = malloc(sizeof(VkDeviceQueueCreateInfo) * family_count);
+    if (queue_create_infos == NULL) { return NULL; }
+
+    // Create priority array
+    uint32_t total_queues = 0;
+    for (int i = 0; i < family_count; ++i) {
+        total_queues += family_properties[i].queueCount;
+    }
+    float *queue_priorities = malloc(sizeof(float) * total_queues);
+    if (queue_priorities == NULL) {
+        return NULL;
+    }
+
+    // Create queue create infos
+    uint32_t queue_index = 0;
+    for (int i = 0; i < family_count; ++i) {
+        if (!(family_properties[i].queueFlags & (VK_QUEUE_GRAPHICS_BIT))) {
+            continue;
+        }
+
+        // Rank queue priorities
+        uint32_t family_start_index = queue_index;
+        for (int j = 0; j < total_queues; ++j) {
+            // Assign priorities in decreasing order
+            float priority_score = 1.0f - (float)j / total_queues;
+            if (priority_score < 0.0f) {
+                priority_score = 0.0f;
+            }
+
+            queue_priorities[queue_index] = priority_score;
+            ++queue_index;
+        }
+
+        VkDeviceQueueCreateInfo queue_create_info;
+        queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queue_create_info.pNext = NULL;
+        queue_create_info.flags = 0;
+        queue_create_info.queueFamilyIndex = i;
+        queue_create_info.queueCount = family_properties[i].queueCount;
+        queue_create_info.pQueuePriorities = &(queue_priorities[family_start_index]);
+
+        queue_create_infos[i] = queue_create_info;
+    }
+
+    free(queue_priorities);
+    return queue_create_infos;
+}
+
+/*
+* Cleanup
+*/
+void destroy_vulkan_device(VulkanDevice *device) {
+    vkDestroyDevice(device->logical_device, NULL);
+    if (ENABLE_VALIDAITON_LAYERS) {
+        destroy_debug_utils_msg_ext(device->instance, device->debug_messenger, NULL);
+    }
+
+    vkDestroyInstance(device->instance, NULL);
+    free(device);
+}
+
+void destroy_family_queue_indicies(QueueFamilyIndices *queue_family) {
+    free(queue_family->graphics_family);
+    free(queue_family->present_family);
+    free(queue_family);
+}
+
+/*
+* Debugging
+*/
 void print_extensions() {
     uint32_t required_count = 0;
     const char **required_extensions = get_required_extensions(&required_count);
@@ -238,128 +363,4 @@ void print_extensions() {
 
     free(required_extensions);
     free(available_extensions);
-}
-
-void populate_queue_family_indices(VkQueueFamilyProperties *family_properties, uint32_t queue_family_count, QueueFamilyIndices *indices) {
-    uint32_t total_queue_count = 0;
-    for (int i = 0; i < queue_family_count; ++i) {
-        total_queue_count += family_properties[i].queueCount;
-    }
-
-    // Get number of indicies for each family
-    indices->graphics_count = 0;
-    indices->transfer_count = 0;
-    indices->compute_count = 0;
-    for (int i = 0; i < total_queue_count; ++i) {
-        if (family_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-            ++indices->graphics_count;
-        } else if (family_properties[i].queueFlags & VK_QUEUE_TRANSFER_BIT) {
-            ++indices->transfer_count;
-        } else if (family_properties[i].queueFlags & VK_QUEUE_COMPUTE_BIT) {
-            ++indices->compute_count;
-        }
-    }
-
-    indices->graphics_indicies = malloc(sizeof(uint32_t) * indices->graphics_count);
-    indices->transfer_indicies = malloc(sizeof(uint32_t) * indices->transfer_count);
-    indices->compute_indicies = malloc(sizeof(uint32_t) * indices->compute_count);
-}
-
-VkDeviceQueueCreateInfo *create_queue_family_create_infos(VkPhysicalDevice physical_device, uint32_t queue_family_count, QueueFamilyIndices *indices) {
-    VkQueueFamilyProperties *family_properties = malloc(sizeof(VkQueueFamilyProperties) * queue_family_count);
-    if (family_properties == NULL) {
-        // malloc failed
-        return NULL;
-    }
-    vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count, family_properties);
-
-    // Create priority array
-    uint32_t total_queue_count = 0;
-    for (int i = 0; i < queue_family_count; ++i) {
-        total_queue_count += family_properties[i].queueCount;
-    }
-    float *queue_priorities = malloc(sizeof(float) * total_queue_count);
-    if (queue_priorities == NULL) {
-        return NULL;
-    }
-
-    VkDeviceQueueCreateInfo *queue_create_infos = malloc(sizeof(VkDeviceQueueCreateInfo) * queue_family_count);
-    if (queue_create_infos == NULL) {
-        return NULL;
-    }
-
-    populate_queue_family_indices(family_properties, queue_family_count, indices);
-    if (indices->graphics_indicies == NULL || indices->transfer_indicies == NULL || indices->compute_indicies == NULL) {
-        return NULL;
-    }
-
-    // Create queue create infos
-    uint32_t queue_index = 0;
-    uint32_t graphics_index = 0, transfer_index = 0, compute_index = 0;
-    for (int i = 0; i < queue_family_count; ++i) {
-        if (!(family_properties[i].queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT))) {
-            continue;
-        }
-
-        // Prioritize different queues
-        float base_priority = 0.5f;
-        if (family_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-            base_priority = 1.0f;
-            indices->graphics_indicies[graphics_index] = i;
-            ++graphics_index;
-        } else if (family_properties[i].queueFlags & VK_QUEUE_TRANSFER_BIT) {
-            base_priority = 0.75f;
-            indices->transfer_indicies[transfer_index] = i;
-            ++transfer_index;
-        } else if (family_properties[i].queueFlags & VK_QUEUE_COMPUTE_BIT) {
-            base_priority = 0.5f;
-            indices->compute_indicies[compute_index] = i;
-            ++compute_index;
-        }
-
-        // Rank queue priorities
-        uint32_t family_start_index = queue_index;
-        uint32_t queue_count = family_properties[i].queueCount;
-        for (int j = 0; j < queue_count; ++j) {
-            // Assign priorities in decreasing order
-            float priority_score = base_priority - (float)j / queue_count;
-            if (priority_score < 0.0f) {
-                priority_score = 0.0f;
-            }
-
-            queue_priorities[queue_index] = priority_score;
-            ++queue_index;
-        }
-
-        VkDeviceQueueCreateInfo queue_create_info;
-        queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queue_create_info.pNext = NULL;
-        queue_create_info.flags = 0;
-        queue_create_info.queueFamilyIndex = i;
-        queue_create_info.queueCount = queue_count;
-        queue_create_info.pQueuePriorities = &(queue_priorities[family_start_index]);
-
-        queue_create_infos[i] = queue_create_info;
-    }
-
-    free(queue_priorities);
-    free(family_properties);
-    return queue_create_infos;
-}
-
-void destroy_vulkan_device(VulkanDevice *device) {
-    vkDestroyDevice(device->logical_device, NULL);
-    if (ENABLE_VALIDAITON_LAYERS) {
-        destroy_debug_utils_msg_ext(device->instance, device->debug_messenger, NULL);
-    }
-
-    vkDestroyInstance(device->instance, NULL);
-    free(device);
-}
-
-void destroy_family_queue_indicies(QueueFamilyIndices *queue_family) {
-    free(queue_family->graphics_indicies);
-    free(queue_family->transfer_indicies);
-    free(queue_family->compute_indicies);
-    free(queue_family);
 }

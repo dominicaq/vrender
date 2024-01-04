@@ -15,13 +15,17 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL msg_debugger_callback(
     return VK_FALSE;
 }
 
-void create_debug_messenger(VkInstance instance, VkDebugUtilsMessengerEXT *debug_messenger) {
+VkDebugUtilsMessengerEXT create_debug_messenger(VkInstance instance) {
     VkDebugUtilsMessengerCreateInfoEXT create_info;
     populate_debug_messenger_create_info(&create_info);
 
-    if (create_debug_utils_msg_ext(instance, &create_info, NULL, debug_messenger) != VK_SUCCESS) {
+    VkDebugUtilsMessengerEXT debug_messenger = VK_NULL_HANDLE;
+    if (create_debug_utils_msg_ext(instance, &create_info, NULL, &debug_messenger) != VK_SUCCESS) {
         fprintf(stderr, "failed to set up debug messenger\n");
+        return VK_NULL_HANDLE;
     }
+
+    return debug_messenger;
 }
 
 void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT *create_info) {

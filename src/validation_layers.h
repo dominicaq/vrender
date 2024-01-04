@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-void create_debug_messenger(VkInstance instance, VkDebugUtilsMessengerEXT *debug_messenger);
+VkDebugUtilsMessengerEXT create_debug_messenger(VkInstance instance);
 
 void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT *create_info);
 

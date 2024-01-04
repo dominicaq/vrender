@@ -19,7 +19,7 @@ typedef struct {
 typedef struct {
     VkInstance instance;
     VkDevice logical_device;
-    QueueFamilyIndices *indices;
+    QueueFamilyIndices indices;
     VkSurfaceKHR surface;
     VkDebugUtilsMessengerEXT debug_messenger;
 } VulkanDevice;
@@ -31,10 +31,11 @@ extern const char *VALIDATION_LAYERS[];
 // Device creation
 VulkanDevice *create_vulkan_device();
 VkInstance create_instance();
-VkDevice create_logical_device(VkInstance instance, QueueFamilyIndices **indices);
+VkPhysicalDevice get_physical_device(VkInstance instance);
+VkDevice create_logical_device(VkPhysicalDevice physical_device, QueueFamilyIndices *indices);
 
 // Extensions
-bool is_physical_device_suitable(VkPhysicalDevice physcial_device);
+bool is_physical_device_suitable(VkPhysicalDevice physical_device);
 VkExtensionProperties *get_available_extensions(uint32_t *extension_count);
 const char **get_required_extensions(uint32_t *extension_count);
 

@@ -12,24 +12,33 @@ const char *VALIDATION_LAYERS[] = {
 };
 
 /*
-* Device creation
+* Context creation
 */
-VulkanDevice *create_vulkan_device() {
-    VulkanDevice *device = malloc(sizeof(VulkanDevice));
-    if (device == NULL) {
-        fprintf(stderr, "failed to alloc VulkanDevice\n");
+VulkanContext *create_vulkan_context(GLFWwindow *window) {
+    VulkanContext *v_ctx = malloc(sizeof(VulkanContext));
+    if (v_ctx == NULL) {
+        fprintf(stderr, "failed to alloc VulkanContext\n");
         return NULL;
     }
 
-    device->instance = create_instance();
-    if (device->instance == NULL) {
+    // Vulkan instance
+    v_ctx->instance = create_instance();
+    if (v_ctx->instance == NULL) {
         fprintf(stderr, "failed to create VkInstance\n");
         return NULL;
     }
 
+    // Window surface
+    v_ctx->surface = create_surface(v_ctx->instance, window);
+    if (v_ctx->surface == NULL) {
+        fprintf(stderr, "failed to create VkSurface\n");
+        return NULL;
+    }
+
+    // Additional validation layers
     if (ENABLE_VALIDAITON_LAYERS) {
-        device->debug_messenger = create_debug_messenger(device->instance);
-        if (device->debug_messenger == VK_NULL_HANDLE) {
+        v_ctx->debug_messenger = create_debug_messenger(v_ctx->instance);
+        if (v_ctx->debug_messenger == VK_NULL_HANDLE) {
             fprintf(stderr, "failed to create debug messenger\n");
             return NULL;
         }
@@ -38,35 +47,36 @@ VulkanDevice *create_vulkan_device() {
         printf("Validation layers enabled\n");
     }
 
-    VkPhysicalDevice physical_device = get_physical_device(device->instance);
-    if (physical_device == NULL) {
+    // Pick physical device
+    v_ctx->physical_device = get_physical_device(v_ctx->instance);
+    if (v_ctx->physical_device == NULL) {
         fprintf(stderr, "failed to find physical device\n");
         return NULL;
     }
 
     // Queue families
     uint32_t family_count = 0;
-    VkQueueFamilyProperties *family_properties = get_queue_family_properties(physical_device, &family_count);
+    VkQueueFamilyProperties *family_properties = get_queue_family_properties(v_ctx->physical_device, &family_count);
     if (family_properties == NULL || family_count == 0) {
         fprintf(stderr, "failed to get queue family properties\n");
         return NULL;
     }
 
-    device->indices = get_unique_queue_family_indices(physical_device, device->surface, family_properties, family_count);
-    if (device->indices == NULL) {
+    v_ctx->indices = get_unique_queue_family_indices(v_ctx->physical_device, v_ctx->surface, family_properties, family_count);
+    if (v_ctx->indices == NULL) {
         fprintf(stderr, "failed to get family indices\n");
         return NULL;
     }
 
     // Device creation
-    device->logical_device = create_logical_device(physical_device, family_properties, family_count);
-    if (device->logical_device == NULL) {
+    v_ctx->device = create_logical_device(v_ctx->physical_device, family_properties, family_count);
+    if (v_ctx->device == NULL) {
         fprintf(stderr, "failed to create logical device\n");
         return NULL;
     }
 
     free(family_properties);
-    return device;
+    return v_ctx;
 }
 
 VkInstance create_instance() {
@@ -95,7 +105,7 @@ VkInstance create_instance() {
         return NULL;
     }
 
-    create_info.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+    create_info.flags = 0;
     create_info.enabledExtensionCount = extention_count;
     create_info.ppEnabledExtensionNames = extension_names;
     create_info.enabledLayerCount = 0;
@@ -121,6 +131,17 @@ VkInstance create_instance() {
     return instance;
 }
 
+VkSurfaceKHR create_surface(VkInstance instance, GLFWwindow *window) {
+    VkSurfaceKHR surface;
+    if (glfwCreateWindowSurface(instance, window, NULL, &surface) != VK_SUCCESS) {
+        return NULL;
+    }
+    return surface;
+}
+
+/*
+* Device creation
+*/
 VkPhysicalDevice get_physical_device(VkInstance instance) {
     // Get all available physical devices
     uint32_t physical_device_count = 0;
@@ -320,14 +341,15 @@ VkDeviceQueueCreateInfo *create_queue_family_create_infos(VkQueueFamilyPropertie
 /*
 * Cleanup
 */
-void destroy_vulkan_device(VulkanDevice *device) {
-    vkDestroyDevice(device->logical_device, NULL);
+void destroy_vulkan_context(VulkanContext *v_ctx) {
+    vkDestroyDevice(v_ctx->device, NULL);
     if (ENABLE_VALIDAITON_LAYERS) {
-        destroy_debug_utils_msg_ext(device->instance, device->debug_messenger, NULL);
+        destroy_debug_utils_msg_ext(v_ctx->instance, v_ctx->debug_messenger, NULL);
     }
 
-    vkDestroyInstance(device->instance, NULL);
-    free(device);
+    vkDestroySurfaceKHR(v_ctx->instance, v_ctx->surface, NULL);
+    vkDestroyInstance(v_ctx->instance, NULL);
+    free(v_ctx);
 }
 
 /*

@@ -1,4 +1,5 @@
-#include "vulkan/vulkan.h"
+#define GLFW_INCLUDE_VULKAN
+// #include "vulkan/vulkan.h"
 #include <GLFW/glfw3.h>
 
 #include "device.h"
@@ -40,7 +41,11 @@ int main() {
         return -1;
     }
 
-    VulkanDevice *device = create_vulkan_device();
+    int major, minor, revision;
+    glfwGetVersion(&major, &minor, &revision);
+    printf("GLFW version: %d.%d.%d\n", major, minor, revision);
+
+    VulkanContext *v_ctx = create_vulkan_context(window);
 
     printf("Running...\n");
     while(!glfwWindowShouldClose(window)) {
@@ -53,7 +58,7 @@ int main() {
         // vkEndCommandBuffer(command_buffer);
     }
 
-    destroy_vulkan_device(device);
+    destroy_vulkan_context(v_ctx);
     clean_up(window);
     printf("Exit success\n");
     return 0;

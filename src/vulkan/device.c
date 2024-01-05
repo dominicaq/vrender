@@ -278,9 +278,7 @@ QueueFamilyIndices *get_unique_queue_family_indices(VkPhysicalDevice physical_de
     if (indices == NULL) { return NULL; }
 
     indices->graphics_index = -1;
-    // TODO: Setup vkSurface
-    indices->present_index = 2;
-
+    indices->present_index = -1;
     for (int i = 0; i < family_count; ++i) {
         if (family_properties[i].queueCount == 0) {
             continue;
@@ -292,16 +290,16 @@ QueueFamilyIndices *get_unique_queue_family_indices(VkPhysicalDevice physical_de
         }
 
         // Check if index supports surface
-        // VkBool32 present_support = false;
-        // vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, i, surface, &present_support);
-        // if (present_support == true) {
-        //     indices->present_index = i;
-        // }
+        VkBool32 present_support = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, i, surface, &present_support);
+        if (present_support == true) {
+            indices->present_index = i;
+        }
 
-        // // Found indices to use
-        // if (indices->graphics_index >= 0 && indices->present_index >= 0) {
-        //     break;
-        // }
+        // Found indices to use
+        if (indices->graphics_index >= 0 && indices->present_index >= 0) {
+            break;
+        }
     }
 
     if (indices->graphics_index < 0 || indices->present_index < 0) {

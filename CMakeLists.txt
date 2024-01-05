@@ -6,7 +6,8 @@ set(CMAKE_C_EXTENSIONS OFF)
 # Project
 set(PROJECT_NAME "vrender")
 # Automatically include all source files
-file(GLOB_RECURSE SRC_FILES "${CMAKE_SOURCE_DIR}/src/*.c")
+file(GLOB_RECURSE SRC_FILES
+    "${CMAKE_SOURCE_DIR}/src/*.c")
 project(${PROJECT_NAME} C)
 
 # Find Vulkan package

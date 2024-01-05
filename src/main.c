@@ -1,9 +1,9 @@
 #define GLFW_INCLUDE_VULKAN
-// #include "vulkan/vulkan.h"
+// #include "vulkan/vulkan.h" // temp if I ever want to use SDL
 #include <GLFW/glfw3.h>
 
-#include "device.h"
-#include "validation_layers.h"
+// VULKAN INCLUDE(S)
+#include "vulkan/device.h"
 
 #include <string.h>
 #include <stdbool.h>

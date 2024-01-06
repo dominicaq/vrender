@@ -1,21 +1,23 @@
 #define GLFW_INCLUDE_VULKAN
-// #include "vulkan/vulkan.h" // temp if I ever want to use SDL
 #include <GLFW/glfw3.h>
 
-// VULKAN INCLUDE(S)
-#include "vulkan/device.h"
+#include "renderer/device.h"
 
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 
-// Options
+/*
+* Application Options
+*/
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
 const char *WINDOW_TITLE = "Vulkan Renderer";
 
-// Renderer
+/*
+* Window
+*/
 GLFWwindow *create_window(int width, int height, const char *title) {
     glfwInit();
 
@@ -34,19 +36,24 @@ void clean_up(GLFWwindow *window) {
     glfwTerminate();
 }
 
+void print_glfw_version() {
+    int major, minor, revision;
+    glfwGetVersion(&major, &minor, &revision);
+    printf("GLFW version: %d.%d.%d\n", major, minor, revision);
+}
+
+/*
+* Application
+*/
 int main() {
     GLFWwindow *window = create_window(SCREEN_WIDTH, SCREEN_HEIGHT, WINDOW_TITLE);
     if (window == NULL) {
         fprintf(stderr, "failed to create GLFW window\n");
         return -1;
     }
-
-    int major, minor, revision;
-    glfwGetVersion(&major, &minor, &revision);
-    printf("GLFW version: %d.%d.%d\n", major, minor, revision);
+    print_glfw_version();
 
     VulkanContext *v_ctx = create_vulkan_context(window);
-
     printf("Running...\n");
     while(!glfwWindowShouldClose(window)) {
         // Input
@@ -60,6 +67,7 @@ int main() {
 
     destroy_vulkan_context(v_ctx);
     clean_up(window);
+
     printf("Exit success\n");
     return 0;
 }

@@ -1,7 +1,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include "renderer/device.h"
+#include "renderer/vulkan_context.h"
 
 #include <string.h>
 #include <stdbool.h>

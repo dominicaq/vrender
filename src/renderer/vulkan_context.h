@@ -6,9 +6,11 @@
 
 typedef struct {
     VkSwapchainKHR swapchain;
+    uint32_t image_count;
     VkImage *images;
-    VkFormat image_format;
     VkExtent2D extent;
+    VkFormat image_format;
+    VkImageView *image_views;
 } SwapchainContext;
 
 typedef struct {
@@ -34,6 +36,5 @@ SwapchainContext *create_swapchain_context(VulkanContext *v_ctx, GLFWwindow *win
 
 // Cleanup
 void destroy_vulkan_context(VulkanContext *v_ctx);
-void destroy_swapchain_context(VkDevice device, SwapchainContext *swapchain_ctx);
 
 #endif

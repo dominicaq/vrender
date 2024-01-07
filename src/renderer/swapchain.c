@@ -72,10 +72,60 @@ SwapChainSupportDetails *query_swapchain_support_details(VkPhysicalDevice physic
 }
 
 /*
+* Image views
+*/
+VkImageView *create_swapchain_image_views(VkDevice device, SwapchainContext *swapchain_ctx, uint32_t image_count) {
+    VkImageView *image_views = malloc(sizeof(VkImageView) * image_count);
+    if (image_views == NULL) { return NULL; }
+
+    for (int i = 0; i < image_count; ++i) {
+        VkImageViewCreateInfo create_info;
+        create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        create_info.pNext = NULL;
+        create_info.image = swapchain_ctx->images[i];
+
+        create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        create_info.format = swapchain_ctx->image_format;
+
+        // Components
+        create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+        // Subresource range
+        create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        create_info.subresourceRange.baseMipLevel = 0;
+        create_info.subresourceRange.levelCount = 1;
+        create_info.subresourceRange.baseArrayLayer = 0;
+        create_info.subresourceRange.layerCount = 1;
+
+        if (vkCreateImageView(device, &create_info, NULL, &image_views[i]) != VK_SUCCESS) {
+            fprintf(stderr, "failed to create swapchain image view [%d]\n", i);
+            return NULL;
+        }
+    }
+
+    return image_views;
+}
+
+/*
 * Cleanup
 */
 void destroy_swapchain_support_details(SwapChainSupportDetails *details) {
     free(details->formats);
     free(details->present_modes);
     free(details);
+}
+
+void destroy_swapchain_context(VkDevice device, SwapchainContext *swapchain_ctx) {
+    for (int i = 0; i < swapchain_ctx->image_count; ++i) {
+        vkDestroyImageView(device, swapchain_ctx->image_views[i], NULL);
+    }
+    // Destroying swapchain destroys VkImages aquired by vkGetSwapchainImagesKHR
+    vkDestroySwapchainKHR(device, swapchain_ctx->swapchain, NULL);
+
+    free(swapchain_ctx->image_views);
+    free(swapchain_ctx->images);
+    free(swapchain_ctx);
 }

@@ -28,6 +28,9 @@ VkSurfaceFormatKHR get_swapchain_surface_format(VkSurfaceFormatKHR *formats, uin
 VkPresentModeKHR get_swapchain_present_mode(VkPresentModeKHR *present_modes, uint32_t present_mode_count);
 VkExtent2D get_swapchain_extent(VkSurfaceCapabilitiesKHR capabilities, GLFWwindow *window);
 
+// Image views
+VkImageView *create_swapchain_image_views(VkDevice device, SwapchainContext *swapchain_ctx, uint32_t image_count);
+
 // Support detail
 SwapChainSupportDetails *query_swapchain_support_details(VkPhysicalDevice physical_device, VkSurfaceKHR surface);
 

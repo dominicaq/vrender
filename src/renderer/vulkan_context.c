@@ -122,22 +122,23 @@ SwapchainContext *create_swapchain_context(VulkanContext *v_ctx, GLFWwindow *win
     create_info.clipped = VK_TRUE;
 
     // Swapchain
+    swapchain_ctx->image_count = image_count;
     create_info.oldSwapchain = VK_NULL_HANDLE;
     if (vkCreateSwapchainKHR(v_ctx->device, &create_info, NULL, &swapchain_ctx->swapchain) != VK_SUCCESS) {
         return NULL;
     }
+    // No longer need details
+    destroy_swapchain_support_details(details);
 
-    uint32_t swapchain_image_count = 0;
-    vkGetSwapchainImagesKHR(v_ctx->device, swapchain_ctx->swapchain, &swapchain_image_count, NULL);
-
-    swapchain_ctx->images = malloc(sizeof(VkImage) * swapchain_image_count);
+    swapchain_ctx->images = malloc(sizeof(VkImage) * image_count);
     if (swapchain_ctx == NULL) { return NULL; }
 
-    vkGetSwapchainImagesKHR(v_ctx->device, swapchain_ctx->swapchain, &swapchain_image_count, swapchain_ctx->images );
+    vkGetSwapchainImagesKHR(v_ctx->device, swapchain_ctx->swapchain, &image_count, swapchain_ctx->images);
     swapchain_ctx->image_format = surface_format.format;
     swapchain_ctx->extent = extent;
+    swapchain_ctx->image_views = create_swapchain_image_views(v_ctx->device, swapchain_ctx, image_count);
+    if (swapchain_ctx == NULL) { return NULL; }
 
-    destroy_swapchain_support_details(details);
     return swapchain_ctx;
 }
 
@@ -154,10 +155,4 @@ void destroy_vulkan_context(VulkanContext *v_ctx) {
     vkDestroySurfaceKHR(v_ctx->instance, v_ctx->surface, NULL);
     vkDestroyInstance(v_ctx->instance, NULL);
     free(v_ctx);
-}
-
-void destroy_swapchain_context(VkDevice device, SwapchainContext *swapchain_ctx) {
-    vkDestroySwapchainKHR(device, swapchain_ctx->swapchain, NULL);
-    free(swapchain_ctx->images);
-    free(swapchain_ctx);
 }

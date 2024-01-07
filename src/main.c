@@ -42,6 +42,14 @@ void print_glfw_version() {
     printf("GLFW version: %d.%d.%d\n", major, minor, revision);
 }
 
+void debug_set_title(GLFWwindow *window, VkPhysicalDevice physical_device) {
+    VkPhysicalDeviceProperties properties;
+    vkGetPhysicalDeviceProperties(physical_device, &properties);
+
+    char debug_title[500];
+    snprintf(debug_title, sizeof(debug_title), "Vulkan Renderer - %s", properties.deviceName);
+    glfwSetWindowTitle(window, debug_title);
+}
 /*
 * Application
 */
@@ -54,6 +62,8 @@ int main() {
     print_glfw_version();
 
     VulkanContext *v_ctx = create_vulkan_context(window);
+    debug_set_title(window, v_ctx->physical_device);
+
     printf("Running...\n");
     while(!glfwWindowShouldClose(window)) {
         // Input

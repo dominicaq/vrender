@@ -130,6 +130,7 @@ SwapchainContext *create_swapchain_context(VulkanContext *v_ctx, GLFWwindow *win
     // No longer need details
     destroy_swapchain_support_details(details);
 
+    // Create swapchain images
     swapchain_ctx->images = malloc(sizeof(VkImage) * image_count);
     if (swapchain_ctx == NULL) { return NULL; }
 

@@ -15,7 +15,9 @@ const char *VALIDATION_LAYERS[] = {
 
 const char* DEVICE_EXTENSIONS[] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+#ifdef __APPLE__
     "VK_KHR_portability_subset"
+#endif
 };
 
 /*
@@ -124,7 +126,6 @@ bool is_physical_device_suitable(VkPhysicalDevice physical_device, VkSurfaceKHR 
 
         // Check if the required extension is in the list of available extensions
         for (int j = 0; j < available_extension_count; ++j) {
-            printf("%s\n", available_extensions[j].extensionName);
             if (strcmp(DEVICE_EXTENSIONS[i], available_extensions[j].extensionName) == 0) {
                 found = true;
                 break;
@@ -133,6 +134,7 @@ bool is_physical_device_suitable(VkPhysicalDevice physical_device, VkSurfaceKHR 
 
         // If the required extension is not found the device is not suitable
         if (!found) {
+            fprintf(stderr, "failed to find suitable device\n");
             is_suitable = false;
             break;
         }

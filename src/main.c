@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 
 #include "renderer/vulkan_context.h"
+#include "renderer/pipeline.h"
 
 #include <string.h>
 #include <stdbool.h>
@@ -61,8 +62,15 @@ int main() {
     }
     print_glfw_version();
 
+    if (!glfwVulkanSupported()) {
+        fprintf(stderr, "pc does not support vulkan\n");
+        return -1;
+    }
+
     VulkanContext *v_ctx = create_vulkan_context(window);
     debug_set_title(window, v_ctx->physical_device);
+
+    // create_graphics_pipeline(v_ctx->device, "fart", "poop");
 
     printf("Running...\n");
     while(!glfwWindowShouldClose(window)) {

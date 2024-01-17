@@ -4,24 +4,25 @@
 * Constants
 */
 #ifdef NDEBUG
-    const bool ENABLE_VALIDAITON_LAYERS = false;
+    const bool ENABLE_VALIDATION_LAYERS = false;
 #else
-    const bool ENABLE_VALIDAITON_LAYERS = true;
+    const bool ENABLE_VALIDATION_LAYERS = true;
 #endif
 
 const char *VALIDATION_LAYERS[] = {
     "VK_LAYER_KHRONOS_validation"
 };
 
-const char *DEVICE_EXTENSIONS[] = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+const char* DEVICE_EXTENSIONS[] = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    "VK_KHR_portability_subset"
 };
 
 /*
 * Context creation
 */
 VkInstance create_instance() {
-    if (ENABLE_VALIDAITON_LAYERS) {
+    if (ENABLE_VALIDATION_LAYERS) {
         uint32_t validation_layer_count = sizeof(VALIDATION_LAYERS) / sizeof(VALIDATION_LAYERS[0]);
         if (!check_validation_layer_support(validation_layer_count, VALIDATION_LAYERS)) {
             fprintf(stderr, "validation layers requested, but not supported!\n");
@@ -49,13 +50,13 @@ VkInstance create_instance() {
         return NULL;
     }
 
-    create_info.flags = 0;
+    create_info.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
     create_info.enabledExtensionCount = extention_count;
     create_info.ppEnabledExtensionNames = extension_names;
     create_info.enabledLayerCount = 0;
     create_info.pNext = NULL;
 
-    if (ENABLE_VALIDAITON_LAYERS) {
+    if (ENABLE_VALIDATION_LAYERS) {
         create_info.enabledLayerCount = sizeof(VALIDATION_LAYERS) / sizeof(VALIDATION_LAYERS[0]);
         create_info.ppEnabledLayerNames = VALIDATION_LAYERS;
 
@@ -123,6 +124,7 @@ bool is_physical_device_suitable(VkPhysicalDevice physical_device, VkSurfaceKHR 
 
         // Check if the required extension is in the list of available extensions
         for (int j = 0; j < available_extension_count; ++j) {
+            printf("%s\n", available_extensions[j].extensionName);
             if (strcmp(DEVICE_EXTENSIONS[i], available_extensions[j].extensionName) == 0) {
                 found = true;
                 break;
@@ -165,7 +167,7 @@ VkDevice create_logical_device(VkPhysicalDevice physical_device, VkQueueFamilyPr
     // Layers
     create_info.enabledLayerCount = 0;
     create_info.ppEnabledLayerNames = NULL;
-    if (ENABLE_VALIDAITON_LAYERS) {
+    if (ENABLE_VALIDATION_LAYERS) {
         create_info.enabledLayerCount = sizeof(VALIDATION_LAYERS) / sizeof(VALIDATION_LAYERS[0]);
         create_info.ppEnabledLayerNames = VALIDATION_LAYERS;
     }
@@ -202,36 +204,37 @@ VkExtensionProperties *get_available_instance_extensions(uint32_t *extension_cou
 }
 
 const char **get_required_instance_extensions(uint32_t *extension_count) {
-    uint32_t required_count = 0;
-    const char **glfw_extensions = glfwGetRequiredInstanceExtensions(&required_count);
+    uint32_t glfw_extension_count = 0;
+    const char **glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
     if (glfw_extensions == NULL) {
         fprintf(stderr, "failed to retrieve GLFW extensions\n");
         return NULL;
     }
 
-    uint32_t additional_count = 1;
-    if (ENABLE_VALIDAITON_LAYERS) {
-        ++additional_count;
+    // Calculate total extension count
+    // +1 for VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME
+    uint32_t total_extension_count = glfw_extension_count + 2;
+    if (ENABLE_VALIDATION_LAYERS) {
+        ++total_extension_count;
     }
 
-    uint32_t total_count = required_count + additional_count;
-    const char **extensions = malloc((total_count) * sizeof(char*));
+    const char **extensions = malloc(total_extension_count * sizeof(char*));
     if (extensions == NULL) {
-        fprintf(stderr, "failed to alloc memory for extensions array\n");
+        fprintf(stderr, "Failed to allocate memory for extensions array\n");
         return NULL;
     }
 
-    for (int i = 0; i < required_count; i++) {
-        extensions[i] = glfw_extensions[i];
+    memcpy(extensions, glfw_extensions, glfw_extension_count * sizeof(char*));
+
+    // Add additional extensions required by vulkan spec
+    extensions[glfw_extension_count] = VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME;
+    extensions[glfw_extension_count + 1] = "VK_KHR_get_physical_device_properties2";
+    // Add validation layer extension if enabled
+    if (ENABLE_VALIDATION_LAYERS) {
+        extensions[glfw_extension_count + 2] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
     }
 
-    // Additional extensions
-    extensions[required_count] = VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME;
-    if (ENABLE_VALIDAITON_LAYERS) {
-        extensions[required_count + 1] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
-    }
-
-    *extension_count = total_count;
+    *extension_count = total_extension_count;
     return extensions;
 }
 

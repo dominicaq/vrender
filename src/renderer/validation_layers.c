@@ -69,15 +69,19 @@ bool check_validation_layer_support(uint32_t num_validation_layers, const char *
     uint32_t layer_count;
     vkEnumerateInstanceLayerProperties(&layer_count, NULL);
 
-    // Get all available layers
     VkLayerProperties *available_layers = malloc(sizeof(VkLayerProperties) * layer_count);
     if (available_layers == NULL) {
-        fprintf(stderr, "failed to alloc available_layers!\n");
+        fprintf(stderr, "failed to allocate memory for available layers\n");
         return false;
     }
+
     vkEnumerateInstanceLayerProperties(&layer_count, available_layers);
 
-    // Check if validation configs layers are present
+    printf("Available Validation Layers:\n");
+    for (int j = 0; j < layer_count; ++j) {
+        printf("\t%s\n", available_layers[j].layerName);
+    }
+
     bool supports_layers = true;
     for (int i = 0; i < num_validation_layers; ++i) {
         bool layer_found = false;
@@ -89,6 +93,7 @@ bool check_validation_layer_support(uint32_t num_validation_layers, const char *
         }
 
         if (!layer_found) {
+            fprintf(stderr, "Validation layer not found: %s\n", validation_layers[i]);
             supports_layers = false;
             break;
         }

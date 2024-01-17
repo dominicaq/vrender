@@ -13,7 +13,7 @@
 #include <stdio.h>
 
 // Layers
-extern const bool ENABLE_VALIDAITON_LAYERS;
+extern const bool ENABLE_VALIDATION_LAYERS;
 extern const char *VALIDATION_LAYERS[];
 
 // Extensions

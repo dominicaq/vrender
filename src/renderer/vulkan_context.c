@@ -22,7 +22,7 @@ VulkanContext *create_vulkan_context(GLFWwindow *window) {
     }
 
     // Additional validation layers
-    if (ENABLE_VALIDAITON_LAYERS) {
+    if (ENABLE_VALIDATION_LAYERS) {
         v_ctx->debug_messenger = create_debug_messenger(v_ctx->instance);
         if (v_ctx->debug_messenger == VK_NULL_HANDLE) {
             fprintf(stderr, "failed to create debug messenger\n");
@@ -148,7 +148,7 @@ SwapchainContext *create_swapchain_context(VulkanContext *v_ctx, GLFWwindow *win
 void destroy_vulkan_context(VulkanContext *v_ctx) {
     destroy_swapchain_context(v_ctx->device, v_ctx->swapchain_ctx);
     vkDestroyDevice(v_ctx->device, NULL);
-    if (ENABLE_VALIDAITON_LAYERS) {
+    if (ENABLE_VALIDATION_LAYERS) {
         destroy_debug_utils_msg_ext(v_ctx->instance, v_ctx->debug_messenger, NULL);
     }
 

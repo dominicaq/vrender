@@ -20,9 +20,21 @@ file(GLOB_RECURSE SHADER_FILES
 )
 
 # Get packages
-find_package(glfw3 REQUIRED)
-if(NOT glfw3_FOUND)
-    message(FATAL_ERROR "GLFW not found")
+if(APPLE)
+    find_package(glfw3 REQUIRED)
+    if(NOT glfw3_FOUND)
+        message(FATAL_ERROR "GLFW not found")
+    endif()
+    set(LINK_LIBS glfw)
+elseif(WIN32)
+    set(GLFW_LIB_DIR "${CMAKE_SOURCE_DIR}/vendor/lib")
+    set(GLFW_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/vendor/include")
+    include_directories(${GLFW_INCLUDE_DIR})
+    find_library(GLFW_LIBRARY NAMES glfw3 glfw PATHS ${GLFW_LIB_DIR} NO_DEFAULT_PATH)
+    if(NOT GLFW_LIBRARY)
+        message(FATAL_ERROR "GLFW library not found")
+    endif()
+    set(LINK_LIBS ${GLFW_LIBRARY})
 endif()
 
 find_package(Vulkan REQUIRED)
@@ -31,7 +43,7 @@ if(NOT Vulkan_FOUND)
 endif()
 
 # Set link libraries
-set(LINK_LIBS glfw Vulkan::Vulkan)
+list(APPEND LINK_LIBS Vulkan::Vulkan)
 
 # Build options
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall") # -Werror
@@ -43,7 +55,7 @@ include_directories("${CMAKE_SOURCE_DIR}/vendor/include")
 add_executable(${PROJECT_NAME} ${SOURCE_FILES_DIR})
 
 # Link libraries
-target_link_libraries(${PROJECT_NAME} ${LINK_LIBS} Vulkan::Vulkan)
+target_link_libraries(${PROJECT_NAME} ${LINK_LIBS})
 
 # Compile shaders
 set(SPIRV_BINARY_FILES "")

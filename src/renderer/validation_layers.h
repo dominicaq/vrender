@@ -23,4 +23,6 @@ void destroy_debug_utils_msg_ext(VkInstance instance,
     VkDebugUtilsMessengerEXT debug_messenger,
     const VkAllocationCallbacks *p_allocator);
 
+void print_available_layers();
+
 #endif

@@ -9,15 +9,22 @@
     const bool ENABLE_VALIDATION_LAYERS = true;
 #endif
 
+const int VALIDATION_LAYER_COUNT = 1;
 const char *VALIDATION_LAYERS[] = {
     "VK_LAYER_KHRONOS_validation"
 };
 
+#ifdef __APPLE__
+const int DEVICE_EXTENSION_COUNT = 2;
 const char* DEVICE_EXTENSIONS[] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-#ifdef __APPLE__
     "VK_KHR_portability_subset"
+#else
+const int DEVICE_EXTENSION_COUNT = 1;
+const char* DEVICE_EXTENSIONS[] = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 #endif
+
 };
 
 /*
@@ -25,8 +32,7 @@ const char* DEVICE_EXTENSIONS[] = {
 */
 VkInstance create_instance() {
     if (ENABLE_VALIDATION_LAYERS) {
-        uint32_t validation_layer_count = sizeof(VALIDATION_LAYERS) / sizeof(VALIDATION_LAYERS[0]);
-        if (!check_validation_layer_support(validation_layer_count, VALIDATION_LAYERS)) {
+        if (!check_validation_layer_support(VALIDATION_LAYER_COUNT, VALIDATION_LAYERS)) {
             fprintf(stderr, "validation layers requested, but not supported!\n");
             return NULL;
         }
@@ -59,7 +65,7 @@ VkInstance create_instance() {
     create_info.pNext = NULL;
 
     if (ENABLE_VALIDATION_LAYERS) {
-        create_info.enabledLayerCount = sizeof(VALIDATION_LAYERS) / sizeof(VALIDATION_LAYERS[0]);
+        create_info.enabledLayerCount = VALIDATION_LAYER_COUNT;
         create_info.ppEnabledLayerNames = VALIDATION_LAYERS;
 
         VkDebugUtilsMessengerCreateInfoEXT debug_create_info;
@@ -74,6 +80,7 @@ VkInstance create_instance() {
         return NULL;
     }
 
+    free(extension_names);
     return instance;
 }
 
@@ -120,8 +127,7 @@ bool is_physical_device_suitable(VkPhysicalDevice physical_device, VkSurfaceKHR 
     vkEnumerateDeviceExtensionProperties(physical_device, NULL, &available_extension_count, available_extensions);
 
     bool is_suitable = true;
-    uint32_t required_count = sizeof(DEVICE_EXTENSIONS) / sizeof(DEVICE_EXTENSIONS[0]);
-    for (int i = 0; i < required_count; ++i) {
+    for (int i = 0; i < DEVICE_EXTENSION_COUNT; ++i) {
         bool found = false;
 
         // Check if the required extension is in the list of available extensions
@@ -170,12 +176,12 @@ VkDevice create_logical_device(VkPhysicalDevice physical_device, VkQueueFamilyPr
     create_info.enabledLayerCount = 0;
     create_info.ppEnabledLayerNames = NULL;
     if (ENABLE_VALIDATION_LAYERS) {
-        create_info.enabledLayerCount = sizeof(VALIDATION_LAYERS) / sizeof(VALIDATION_LAYERS[0]);
+        create_info.enabledLayerCount = VALIDATION_LAYER_COUNT;
         create_info.ppEnabledLayerNames = VALIDATION_LAYERS;
     }
 
     // Extensions
-    create_info.enabledExtensionCount = sizeof(DEVICE_EXTENSIONS) / sizeof(DEVICE_EXTENSIONS[0]);
+    create_info.enabledExtensionCount = DEVICE_EXTENSION_COUNT;
     create_info.ppEnabledExtensionNames = DEVICE_EXTENSIONS;
 
     // Physical device features
@@ -188,6 +194,7 @@ VkDevice create_logical_device(VkPhysicalDevice physical_device, VkQueueFamilyPr
         return NULL;
     }
 
+    free(queue_create_infos);
     return logical_device;
 }
 

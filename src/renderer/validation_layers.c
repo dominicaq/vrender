@@ -44,48 +44,22 @@ void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT *cr
     create_info->flags = 0;
 }
 
-VkResult create_debug_utils_msg_ext(VkInstance instance,
-    const VkDebugUtilsMessengerCreateInfoEXT *p_create_info,
-    const VkAllocationCallbacks *p_allocator,
-    VkDebugUtilsMessengerEXT *p_debug_messenger) {
-    PFN_vkCreateDebugUtilsMessengerEXT func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-    if (func != NULL) {
-        return func(instance, p_create_info, p_allocator, p_debug_messenger);
-    } else {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
-
-void destroy_debug_utils_msg_ext(VkInstance instance,
-    VkDebugUtilsMessengerEXT debug_messenger,
-    const VkAllocationCallbacks *p_allocator) {
-    PFN_vkDestroyDebugUtilsMessengerEXT func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-    if (func != NULL) {
-        func(instance, debug_messenger, p_allocator);
-    }
-}
-
 bool check_validation_layer_support(uint32_t num_validation_layers, const char **validation_layers) {
-    uint32_t layer_count;
-    vkEnumerateInstanceLayerProperties(&layer_count, NULL);
+    uint32_t instance_layer_count;
+    vkEnumerateInstanceLayerProperties(&instance_layer_count, NULL);
 
-    VkLayerProperties *available_layers = malloc(sizeof(VkLayerProperties) * layer_count);
+    VkLayerProperties *available_layers = malloc(sizeof(VkLayerProperties) * instance_layer_count);
     if (available_layers == NULL) {
         fprintf(stderr, "failed to allocate memory for available layers\n");
         return false;
     }
 
-    vkEnumerateInstanceLayerProperties(&layer_count, available_layers);
-
-    printf("Available Validation Layers:\n");
-    for (int j = 0; j < layer_count; ++j) {
-        printf("\t%s\n", available_layers[j].layerName);
-    }
+    vkEnumerateInstanceLayerProperties(&instance_layer_count, available_layers);
 
     bool supports_layers = true;
     for (int i = 0; i < num_validation_layers; ++i) {
         bool layer_found = false;
-        for (int j = 0; j < layer_count; ++j) {
+        for (int j = 0; j < instance_layer_count; ++j) {
             if (strcmp(validation_layers[i], available_layers[j].layerName) == 0) {
                 layer_found = true;
                 break;
@@ -101,4 +75,44 @@ bool check_validation_layer_support(uint32_t num_validation_layers, const char *
 
     free(available_layers);
     return supports_layers;
+}
+
+VkResult create_debug_utils_msg_ext(VkInstance instance,
+    const VkDebugUtilsMessengerCreateInfoEXT *p_create_info,
+    const VkAllocationCallbacks *p_allocator,
+    VkDebugUtilsMessengerEXT *p_debug_messenger) {
+    PFN_vkCreateDebugUtilsMessengerEXT func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+    if (func != NULL) {
+        return func(instance, p_create_info, p_allocator, p_debug_messenger);
+    } else {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+}
+
+void destroy_debug_utils_msg_ext(VkInstance instance,
+    VkDebugUtilsMessengerEXT debug_messenger,
+    const VkAllocationCallbacks *p_allocator) {
+
+    PFN_vkDestroyDebugUtilsMessengerEXT func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+    if (func != NULL) {
+        func(instance, debug_messenger, p_allocator);
+    }
+}
+
+void print_available_layers() {
+    uint32_t instance_layer_count;
+    vkEnumerateInstanceLayerProperties(&instance_layer_count, NULL);
+
+    VkLayerProperties *available_layers = malloc(sizeof(VkLayerProperties) * instance_layer_count);
+    if (available_layers == NULL) {
+        fprintf(stderr, "failed to allocate memory for available layers\n");
+    }
+
+    vkEnumerateInstanceLayerProperties(&instance_layer_count, available_layers);
+
+    printf("Available Validation Layers:\n");
+    for (int i = 0; i < instance_layer_count; ++i) {
+        printf("\t%s\n", available_layers[i].layerName);
+    }
+    free(available_layers);
 }

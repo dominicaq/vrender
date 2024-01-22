@@ -149,11 +149,13 @@ SwapchainContext *create_swapchain_context(VulkanContext *v_ctx, GLFWwindow *win
 void destroy_vulkan_context(VulkanContext *v_ctx) {
     destroy_swapchain_context(v_ctx->device, v_ctx->swapchain_ctx);
     vkDestroyDevice(v_ctx->device, NULL);
+    vkDestroySurfaceKHR(v_ctx->instance, v_ctx->surface, NULL);
     if (ENABLE_VALIDATION_LAYERS) {
         destroy_debug_utils_msg_ext(v_ctx->instance, v_ctx->debug_messenger, NULL);
     }
 
-    vkDestroySurfaceKHR(v_ctx->instance, v_ctx->surface, NULL);
     vkDestroyInstance(v_ctx->instance, NULL);
+
+    free(v_ctx->indices);
     free(v_ctx);
 }

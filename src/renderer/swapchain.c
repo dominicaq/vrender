@@ -83,6 +83,7 @@ VkImageView *create_swapchain_image_views(VkDevice device, SwapchainContext *swa
         create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         create_info.pNext = NULL;
         create_info.image = swapchain_ctx->images[i];
+        create_info.flags = 0;
 
         create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
         create_info.format = swapchain_ctx->image_format;

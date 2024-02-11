@@ -1,21 +1,23 @@
 #ifndef PIPELINE_H
 #define PIPELINE_H
 
-#include "vulkan/vulkan.h"
+#include "vulkan_context.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-extern const char *SHADER_BIN_DIR;
+#include "config.h"
 
 extern const int DYNAMIC_STATES_COUNT;
 extern const VkDynamicState DYNAMIC_STATES[];
 
 // Pipeline creation
-void create_graphics_pipeline(VkDevice device, const char *fname_vert, const char *fname_frag);
-void input_assembly();
-void rasterizer();
+VkPipelineLayout create_graphics_pipeline(VkDevice device, SwapchainContext *swapchain_ctx, const char *fname_vert, const char *fname_frag);
+VkPipelineLayout create_pipeline_layout(VkDevice device, SwapchainContext *swapchain_ctx);
+
+// Render pass
+VkRenderPass create_render_pass(VkDevice device);
 
 // Shaders
 VkShaderModule create_shader_module(VkDevice device, const char *fname);

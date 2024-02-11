@@ -24,7 +24,6 @@ const int DEVICE_EXTENSION_COUNT = 1;
 const char* DEVICE_EXTENSIONS[] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 #endif
-
 };
 
 /*

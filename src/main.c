@@ -51,6 +51,7 @@ void debug_set_title(GLFWwindow *window, VkPhysicalDevice physical_device) {
     snprintf(debug_title, sizeof(debug_title), "Vulkan Renderer - %s", properties.deviceName);
     glfwSetWindowTitle(window, debug_title);
 }
+
 /*
 * Application
 */
@@ -70,7 +71,7 @@ int main() {
     VulkanContext *v_ctx = create_vulkan_context(window);
     debug_set_title(window, v_ctx->physical_device);
 
-    // create_graphics_pipeline(v_ctx->device, "fart", "poop");
+    VkPipelineLayout main_pipeline = create_graphics_pipeline(v_ctx->device, v_ctx->swapchain_ctx, "vert.spv", "frag.spv");
 
     printf("Running...\n");
     while(!glfwWindowShouldClose(window)) {
@@ -82,6 +83,8 @@ int main() {
 
         // vkEndCommandBuffer(command_buffer);
     }
+
+    vkDestroyPipelineLayout(v_ctx->device, main_pipeline, NULL);
 
     destroy_vulkan_context(v_ctx);
     clean_up(window);

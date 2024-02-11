@@ -7,16 +7,22 @@ set(CMAKE_C_EXTENSIONS OFF)
 # Source files
 file(GLOB_RECURSE SOURCE_FILES_DIR "${CMAKE_SOURCE_DIR}/src/*.c")
 set(SHADER_SOURCE_DIR "${CMAKE_SOURCE_DIR}/src/shaders")
-set(SHADER_BINARY_DIR "${CMAKE_BINARY_DIR}/shaders")
+set(SHADER_BIN_DIR "${CMAKE_BINARY_DIR}/shaders")
 # Ensure the shader binary directory exists
-if(NOT EXISTS ${SHADER_BINARY_DIR})
-    file(MAKE_DIRECTORY ${SHADER_BINARY_DIR})
+if(NOT EXISTS ${SHADER_BIN_DIR})
+    file(MAKE_DIRECTORY ${SHADER_BIN_DIR})
 endif()
 
 # Get all shader files
 file(GLOB_RECURSE SHADER_FILES
     "${SHADER_SOURCE_DIR}/*.frag"
     "${SHADER_SOURCE_DIR}/*.vert"
+)
+
+# Pass directorie(s) into config file
+configure_file(
+    "${CMAKE_SOURCE_DIR}/src/renderer/config.h.in"
+    "${CMAKE_SOURCE_DIR}/src/renderer/config.h"
 )
 
 # Get packages
@@ -61,13 +67,13 @@ target_link_libraries(${PROJECT_NAME} ${LINK_LIBS})
 set(SPIRV_BINARY_FILES "")
 foreach(GLSL_SHADER ${SHADER_FILES})
     get_filename_component(FILE_NAME ${GLSL_SHADER} NAME_WE)
-    set(SPIRV "${SHADER_BINARY_DIR}/${FILE_NAME}.spv")
+    set(SPIRV_OUT "${SHADER_BIN_DIR}/${FILE_NAME}.spv")
     add_custom_command(
-        OUTPUT ${SPIRV}
-        COMMAND glslc ${GLSL_SHADER} -o ${SPIRV}
+        OUTPUT ${SPIRV_OUT}
+        COMMAND glslc ${GLSL_SHADER} -o ${SPIRV_OUT}
         DEPENDS ${GLSL_SHADER}
     )
-    list(APPEND SPIRV_BINARY_FILES ${SPIRV})
+    list(APPEND SPIRV_BINARY_FILES ${SPIRV_OUT})
 endforeach(GLSL_SHADER)
 
 # Add Shaders target dependency
